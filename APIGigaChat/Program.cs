@@ -13,10 +13,25 @@ namespace APIGigaChat
     {
         static string ClientId = "***";
         static string AuthorizationKey = "***";
-        static async void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            string Token = await GetToken(ClientId,AuthorizationKey);
+            string Token = await GetToken(ClientId, AuthorizationKey);
+
+            if (Token == null)
+            {
+                Console.WriteLine("Не удалось получить токен");
+                return;
+            }
+
+            while (true)
+            {
+                Console.Write("Сообщение: ");
+                string Message = Console.ReadLine();
+                ResponseMessage Answer = await GetAnswer(Token, Message);
+                Console.WriteLine("Ответ: " + Answer.choices[0].message.content);
+            }
         }
+
         public static async Task<string> GetToken(string rqUID, string bearer)
         {
             string returnToken = null;
