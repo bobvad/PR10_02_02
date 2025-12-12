@@ -35,7 +35,7 @@ namespace APIGigaChat
         public static async Task<string> GetToken(string rqUID, string bearer)
         {
             string returnToken = null;
-            string url = "https://ngw.devices.sberbank.ru:9WU3/api/v2/oauth";
+            string url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
 
             using (HttpClientHandler handler = new HttpClientHandler())
             {
@@ -75,7 +75,7 @@ namespace APIGigaChat
 
             using (HttpClientHandler Handler = new HttpClientHandler())
             {
-                Handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+                Handler.ServerCertificateCustomValidationCallback = (messages, cert, chain, sslPolicyErrors) => true;
 
                 using (HttpClient Client = new HttpClient(Handler))
                 {
@@ -84,19 +84,19 @@ namespace APIGigaChat
                     Request.Headers.Add("Accept", "application/json");
                     Request.Headers.Add("Authorization", $"Bearer {token}");
 
-                    Request DataRequest = new Request()
+                    Models.Request DataRequest = new Models.Request()
                     {
                         model = "GigaChat",
                         stream = false,
                         repetition_penalty = 1,
-                        messages = new List<Request.Message>()
-                {
-                    new Request.Message()
+                        messages = new List<Models.Request.Message>()
                     {
-                        role = "user",
-                        content = message
-                    }
-                }
+                    new Models.Request.Message()
+                        {
+                           role = "user",
+                           content = message
+                        }
+                        }
                     };
 
                     string JsonContent = JsonConvert.SerializeObject(DataRequest);
