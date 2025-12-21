@@ -11,12 +11,16 @@ namespace APIGigaChat
 {
     internal class Program
     {
-        static string ClientId = "***";
-        static string AuthorizationKey = "***";
+        static string ClientId = "0199d470-bb93-7ce2-b0df-620ead27395d";
+        static string AuthorizationKey = "MDE5OWQ0NzAtYmI5My03Y2UyLWIwZGYtNjIwZWFkMjczOTVkOjZkYWIzODE4LTgyZDQtNGMwZS05NDRjLTQ0MzY1NWVjODg1YQ==";
+       
         static async Task Main(string[] args)
         {
-            string Token = await GetToken(ClientId, AuthorizationKey);
+            Console.WriteLine("GigaChat Диалог");
+            Console.WriteLine("Команды: /clear - очистить историю, /exit - выход\n");
 
+            string Token = await GetToken(ClientId, AuthorizationKey);
+               List<Models.Request.Message> messageHistory = new List<Models.Request.Message>();
             if (Token == null)
             {
                 Console.WriteLine("Не удалось получить токен");
@@ -25,10 +29,51 @@ namespace APIGigaChat
 
             while (true)
             {
-                Console.Write("Сообщение: ");
-                string Message = Console.ReadLine();
-                ResponseMessage Answer = await GetAnswer(Token, Message);
-                Console.WriteLine("Ответ: " + Answer.choices[0].message.content);
+                Console.Write("Вы: ");
+                string userMessage = Console.ReadLine();
+
+                if (userMessage.ToLower() == "/exit") break;
+                if (userMessage.ToLower() == "/clear")
+                {
+                    messageHistory.Clear();
+                    Console.WriteLine("История очищена\n");
+                    continue;
+                }
+
+                messageHistory.Add(new Models.Request.Message()
+                {
+                    role = "user",
+                    content = userMessage
+                });
+
+                ResponseMessage answer = await GetAnswer(Token, messageHistory);
+
+                if (answer?.choices?.Count > 0)
+                {
+                    string response = answer.choices[0].message.content;
+
+                    messageHistory.Add(new Models.Request.Message()
+                    {
+                        role = "assistant",
+                        content = response
+                    });
+
+                    Console.WriteLine($"\nGigaChat: {response}\n");
+
+                    if (messageHistory.Count > 20)
+                    {
+                        var systemMsg = messageHistory.FirstOrDefault(m => m.role == "system");
+                        messageHistory = messageHistory
+                            .Where(m => m.role == "system")
+                            .Concat(messageHistory
+                                .Where(m => m.role != "system"))
+                            .ToList();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Ошибка получения ответа\n");
+                }
             }
         }
 
@@ -68,7 +113,7 @@ namespace APIGigaChat
             }
             return returnToken;
         }
-        public static async Task<ResponseMessage> GetAnswer(string token, string message)
+        public static async Task<ResponseMessage> GetAnswer(string token, List<Models.Request.Message> history)
         {
             ResponseMessage responseMessage = null;
             string Url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
@@ -89,14 +134,7 @@ namespace APIGigaChat
                         model = "GigaChat",
                         stream = false,
                         repetition_penalty = 1,
-                        messages = new List<Models.Request.Message>()
-                    {
-                    new Models.Request.Message()
-                        {
-                           role = "user",
-                           content = message
-                        }
-                        }
+                        messages = history
                     };
 
                     string JsonContent = JsonConvert.SerializeObject(DataRequest);
